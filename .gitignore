@@ -1,0 +1,3 @@
+backend/venv
+frontend/my-pocket-spice/node_modules
+backend/db.sqlite3
