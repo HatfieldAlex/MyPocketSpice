@@ -42,11 +42,12 @@ class RecipeIngredientInline(admin.TabularInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ["id", "title", "category", "preparation_duration",
+    list_display = ["id", "title", "author", "category", "preparation_duration",
                     "servings", "skill_level", "created_at"]
     search_fields = ["title", "description"]
-    list_filter = ["category", "skill_level"]
+    list_filter = ["category", "skill_level", "author"]
     inlines = [InstructionInline, RecipeIngredientInline]
+    raw_id_fields = ["author"]
 
 
 @admin.register(Instruction)

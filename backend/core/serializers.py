@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from .models import (
     Recipe,
     Instruction,
@@ -30,12 +31,20 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
+class UserInfoSerializer(serializers.ModelSerializer):
+    """Lightweight user info serializer for recipe responses"""
+    class Meta:
+        model = User
+        fields = ["id", "username"]
+
+
 # -------------------------------------------------
 # Lightweight serializer for lists / landing page
 # -------------------------------------------------
 class RecipeListSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     skill_level = SkillLevelSerializer()
+    author = UserInfoSerializer(read_only=True)
 
     class Meta:
         model = Recipe
@@ -46,6 +55,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "servings",
             "category",
             "skill_level",
+            "author",
             "created_at",
         ]
 
@@ -70,6 +80,7 @@ class InstructionSerializer(serializers.ModelSerializer):
 class RecipeDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     skill_level = SkillLevelSerializer()
+    author = UserInfoSerializer(read_only=True)
     instructions = InstructionSerializer(many=True, read_only=True)
     recipe_ingredients = RecipeIngredientSerializer(many=True, read_only=True)
 
@@ -83,6 +94,7 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
             "preparation_duration",
             "servings",
             "skill_level",
+            "author",
             "created_at",
             "instructions",
             "recipe_ingredients",
@@ -124,10 +136,15 @@ class RecipeCreateSerializer(serializers.Serializer):
         if skill_level_id:
             skill_level = SkillLevel.objects.get(id=skill_level_id)
 
+        # GET AUTHOR from request context (set by view)
+        request = self.context.get('request')
+        author = request.user if request and request.user.is_authenticated else None
+
         # CREATE RECIPE
         recipe = Recipe.objects.create(
             category=category,
             skill_level=skill_level,
+            author=author,
             **validated_data
         )
 
@@ -161,6 +178,10 @@ class RecipeCreateSerializer(serializers.Serializer):
 
 
 class RecipeCreatedResponseSerializer(serializers.ModelSerializer):
+    author = UserInfoSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
+    skill_level = SkillLevelSerializer(read_only=True)
+
     class Meta:
         model = Recipe
         fields = [
@@ -168,6 +189,7 @@ class RecipeCreatedResponseSerializer(serializers.ModelSerializer):
             "title",
             "category",
             "skill_level",
+            "author",
             "created_at",
             "servings",
             "preparation_duration",

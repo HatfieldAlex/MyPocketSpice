@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class SkillLevel(models.Model):
@@ -44,7 +45,18 @@ class Recipe(models.Model):
         null=True,
         blank=True,
     )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recipes",
+        help_text="User who created this recipe. Null for legacy recipes.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def __str__(self):
         return self.title

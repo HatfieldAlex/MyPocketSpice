@@ -7,8 +7,21 @@ from .views import (
     RecipeCreateView,
     ai_recipe_match,
 )
+from .auth_views import (
+    UserRegistrationView,
+    user_login_view,
+    user_logout_view,
+    current_user_view,
+)
 
 urlpatterns = [
+    # Authentication endpoints
+    path("auth/register/", UserRegistrationView.as_view(), name="user-register"),
+    path("auth/login/", user_login_view, name="user-login"),
+    path("auth/logout/", user_logout_view, name="user-logout"),
+    path("auth/me/", current_user_view, name="current-user"),
+
+    # Recipe endpoints
     # 1. Landing page list (paginated)
     path("recipes/", RecipeLandingPageView.as_view(), name="recipe-list-landing"),
 
@@ -25,7 +38,7 @@ urlpatterns = [
     # 4. Full detail view by recipe ID
     path("recipes/<int:id>/", RecipeDetailView.as_view(), name="recipe-detail"),
 
-    # 5. Create a new full recipe with nested relationships
+    # 5. Create a new full recipe with nested relationships (requires auth)
     path("recipes/create/", RecipeCreateView.as_view(), name="recipe-create"),
 
     # 6. AI Recipe Matching endpoint

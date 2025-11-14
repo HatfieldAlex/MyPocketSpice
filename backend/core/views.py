@@ -1,6 +1,7 @@
 from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from .models import Recipe, Category
 from .serializers import (
@@ -73,10 +74,18 @@ class RecipeDetailView(generics.RetrieveAPIView):
     lookup_field = "id"
 
 class RecipeCreateView(generics.CreateAPIView):
+    """
+    POST /api/recipes/create/
+    Create a new recipe (requires authentication)
+    """
     serializer_class = RecipeCreateSerializer
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        serializer = RecipeCreateSerializer(data=request.data)
+        serializer = RecipeCreateSerializer(
+            data=request.data,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         recipe = serializer.save()
 
