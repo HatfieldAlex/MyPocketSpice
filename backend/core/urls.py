@@ -27,4 +27,5 @@ urlpatterns = [
     # 5. Create a new full recipe with nested relationships
     path("recipes/create/", RecipeCreateView.as_view(), name="recipe-create"),
 
+
 ]
