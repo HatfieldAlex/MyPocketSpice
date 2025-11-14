@@ -6,6 +6,10 @@ from .serializers import (
     RecipeListSerializer,
     RecipeDetailSerializer,
 )
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import RecipeCreateSerializer, RecipeCreatedResponseSerializer
+
 
 
 # -------------------------------------------------
@@ -61,3 +65,14 @@ class RecipeDetailView(generics.RetrieveAPIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeDetailSerializer
     lookup_field = "id"
+
+class RecipeCreateView(generics.CreateAPIView):
+    serializer_class = RecipeCreateSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = RecipeCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        recipe = serializer.save()
+
+        response_data = RecipeCreatedResponseSerializer(recipe).data
+        return Response(response_data, status=status.HTTP_201_CREATED)
