@@ -2,7 +2,7 @@
   <div class="category-filter">
     <div class="category-list">
       <button
-        v-for="category in categories"
+        v-for="category in displayCategories"
         :key="category"
         :class="['category-box', { active: isCategoryActive(category) }]"
         @click="handleCategoryClick(category)"
@@ -14,27 +14,60 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { defineProps, defineEmits } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 
 const props = defineProps<{
   selectedCategory: string | null
+  onAuthRequired?: () => void
 }>()
 
 const emit = defineEmits<{
   categorySelected: [category: string | null]
 }>()
 
-const categories = ['All', 'Italian', 'Asian', 'Vegetarian', 'Seafood', 'Dessert', 'Breakfast']
+const { isAuthenticated } = useAuth()
+
+const baseCategories = ['Italian', 'Asian', 'Vegetarian', 'Seafood', 'Dessert', 'Breakfast']
+
+const displayCategories = computed(() => {
+  const categories = ['All']
+  if (isAuthenticated.value) {
+    categories.push('My Recipes')
+  }
+  categories.push(...baseCategories)
+  return categories
+})
 
 const isCategoryActive = (category: string): boolean => {
   if (category === 'All') {
     return props.selectedCategory === null
   }
+  if (category === 'My Recipes') {
+    return props.selectedCategory === 'mine'
+  }
   return props.selectedCategory === category
 }
 
 const handleCategoryClick = (category: string) => {
-  const selected = category === 'All' ? null : category
+  if (category === 'My Recipes' && !isAuthenticated.value) {
+    // Trigger auth required callback if provided
+    if (props.onAuthRequired) {
+      props.onAuthRequired()
+    }
+    return
+  }
+  
+  let selected: string | null = null
+  if (category === 'All') {
+    selected = null
+  } else if (category === 'My Recipes') {
+    selected = 'mine'
+  } else {
+    selected = category
+  }
+  
   emit('categorySelected', selected)
 }
 </script>

@@ -5,6 +5,7 @@
     <Container>
       <CategoryFilter
         :selected-category="selectedCategory"
+        :on-auth-required="handleAuthRequired"
         @category-selected="handleCategorySelected"
       />
       
@@ -51,6 +52,13 @@
         </div>
       </div>
     </Container>
+
+    <LoginModal 
+      :is-open="showLoginModal" 
+      initial-mode="login"
+      @close="showLoginModal = false" 
+      @success="handleAuthSuccess" 
+    />
   </div>
 </template>
 
@@ -62,12 +70,17 @@ import Button from '@/components/ui/Button.vue'
 import RecipeCard from '@/components/RecipeCard.vue'
 import HeroSection from '@/components/HeroSection.vue'
 import CategoryFilter from '@/components/CategoryFilter.vue'
+import LoginModal from '@/components/LoginModal.vue'
 import { useRecipes, useRecipeSearch, useRecipesByCategory } from '@/composables/useRecipes'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const currentPage = ref(1)
 const pageSize = ref(9)
 const selectedCategory = ref<string | null>(null)
+const showLoginModal = ref(false)
+
+const { isAuthenticated } = useAuth()
 
 const searchQuery = computed(() => route.query.q as string | undefined)
 const isSearching = computed(() => !!searchQuery.value)
@@ -100,9 +113,27 @@ const totalPages = computed(() => {
 })
 
 const handleCategorySelected = (category: string | null) => {
+  // If trying to access "My Recipes" without auth, show login modal
+  if (category === 'mine' && !isAuthenticated.value) {
+    showLoginModal.value = true
+    return
+  }
+  
   selectedCategory.value = category
   currentPage.value = 1
   refetch()
+}
+
+const handleAuthRequired = () => {
+  showLoginModal.value = true
+}
+
+const handleAuthSuccess = () => {
+  showLoginModal.value = false
+  // If "My Recipes" was selected, refetch
+  if (selectedCategory.value === 'mine') {
+    refetch()
+  }
 }
 
 const refetch = async () => {

@@ -4,6 +4,7 @@
 
 import { ref } from 'vue'
 import { apiClient } from '@/api/client'
+import { useAuth } from './useAuth'
 import type {
   PaginatedRecipeListList,
   RecipeDetail,
@@ -94,15 +95,50 @@ export function useRecipesByCategory() {
   const recipes = ref<PaginatedRecipeListList | null>(null)
   const loading = ref(false)
   const error = ref<Error | null>(null)
+  const { user } = useAuth()
 
   const fetchByCategory = async (params: RecipesCategoryListParams) => {
     loading.value = true
     error.value = null
     try {
-      recipes.value = await apiClient.getRecipesByCategory(params)
+      // Handle "mine" category specially - filter by current user's recipes
+      // Note: The backend doesn't have a /recipes/category/mine/ endpoint,
+      // so we fetch all recipes and filter client-side
+      if (params.category === 'mine') {
+        if (!user.value) {
+          throw new Error('You must be logged in to view your recipes')
+        }
+        
+        // Fetch all recipes (with pagination if needed)
+        const pageSize = params.page_size || 9
+        const page = params.page || 1
+        
+        // Fetch a large batch to filter client-side
+        // In production, you'd want a backend endpoint like /recipes/mine/
+        const allRecipes = await apiClient.getRecipes({ page: 1, page_size: 1000 })
+        
+        const userRecipes = allRecipes.results.filter(
+          (recipe) => recipe.author?.id === user.value?.id
+        )
+        
+        const startIndex = (page - 1) * pageSize
+        const endIndex = startIndex + pageSize
+        
+        recipes.value = {
+          count: userRecipes.length,
+          next: endIndex < userRecipes.length ? 'next' : null,
+          previous: page > 1 ? 'previous' : null,
+          results: userRecipes.slice(startIndex, endIndex),
+        }
+      } else {
+        recipes.value = await apiClient.getRecipesByCategory(params)
+      }
     } catch (err) {
       error.value = err instanceof Error ? err : new Error('Failed to fetch recipes by category')
       console.error('Error fetching recipes by category:', err)
+      if ((err as any).url) {
+        console.error('Failed URL:', (err as any).url)
+      }
     } finally {
       loading.value = false
     }

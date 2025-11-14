@@ -18,6 +18,14 @@
         <header class="recipe-header">
           <div class="recipe-title-section">
             <h1 class="recipe-title">{{ recipe.title }}</h1>
+            <div v-if="recipe.author" class="recipe-author">
+              <span class="author-label">By</span>
+              <span class="author-name">{{ recipe.author.username }}</span>
+            </div>
+            <div v-else class="recipe-author">
+              <span class="author-label">By</span>
+              <span class="author-name anonymous">Anonymous</span>
+            </div>
             <div class="recipe-badges">
               <Badge v-if="recipe.category" variant="accent">
                 {{ recipe.category.name }}
@@ -166,8 +174,31 @@ onMounted(() => {
   font-size: 2.5rem;
   font-weight: 700;
   color: #0a0a0a;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
   line-height: 1.2;
+}
+
+.recipe-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+}
+
+.author-label {
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+.author-name {
+  color: #0a8961;
+  font-weight: 600;
+}
+
+.author-name.anonymous {
+  color: #8a8a8a;
+  font-style: italic;
 }
 
 .recipe-badges {

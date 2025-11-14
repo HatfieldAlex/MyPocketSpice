@@ -16,6 +16,11 @@ import type {
   RecipesCategoryListParams,
   RecipesSearchListParams,
   RecipeCreate,
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  LogoutRequest,
+  User,
 } from '../types'
 
 class ApiClient {
@@ -134,6 +139,99 @@ class ApiClient {
     return httpClient.post<{ count: number; recipe: RecipeList; justification: string }>('/recipes/ai-match/', {
       ingredients
     })
+  }
+
+  /**
+   * POST /api/auth/register/
+   * Register a new user
+   */
+  async register(data: RegisterRequest): Promise<AuthResponse> {
+    if (API_CONFIG.useMock) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            user: {
+              id: 1,
+              username: data.username,
+              email: data.email || '',
+              first_name: data.first_name || '',
+              last_name: data.last_name || '',
+              date_joined: new Date().toISOString(),
+            },
+            access: 'mock_access_token',
+            refresh: 'mock_refresh_token',
+          })
+        }, 500)
+      })
+    }
+
+    return httpClient.post<AuthResponse>('/auth/register/', data)
+  }
+
+  /**
+   * POST /api/auth/login/
+   * Login user
+   */
+  async login(data: LoginRequest): Promise<AuthResponse> {
+    if (API_CONFIG.useMock) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            user: {
+              id: 1,
+              username: data.username,
+              email: 'test@example.com',
+              first_name: '',
+              last_name: '',
+              date_joined: new Date().toISOString(),
+            },
+            access: 'mock_access_token',
+            refresh: 'mock_refresh_token',
+          })
+        }, 500)
+      })
+    }
+
+    return httpClient.post<AuthResponse>('/auth/login/', data)
+  }
+
+  /**
+   * POST /api/auth/logout/
+   * Logout user
+   */
+  async logout(data: LogoutRequest): Promise<{ detail: string }> {
+    if (API_CONFIG.useMock) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ detail: 'Successfully logged out.' })
+        }, 300)
+      })
+    }
+
+    return httpClient.post<{ detail: string }>('/auth/logout/', data)
+  }
+
+  /**
+   * GET /api/auth/me/
+   * Get current authenticated user
+   */
+  async getCurrentUser(): Promise<User> {
+    if (API_CONFIG.useMock) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            id: 1,
+            username: 'testuser',
+            email: 'test@example.com',
+            first_name: '',
+            last_name: '',
+            date_joined: new Date().toISOString(),
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.get<User>('/auth/me/')
   }
 }
 

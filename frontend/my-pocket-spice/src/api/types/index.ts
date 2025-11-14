@@ -34,6 +34,11 @@ export interface RecipeIngredient {
   quantity: string
 }
 
+export interface UserInfo {
+  id: number
+  username: string
+}
+
 // ============================================
 // Recipe Types
 // ============================================
@@ -46,6 +51,7 @@ export interface RecipeList {
   category: Category
   skill_level: SkillLevel
   created_at: string
+  author?: UserInfo | null
 }
 
 export interface RecipeDetail {
@@ -59,6 +65,7 @@ export interface RecipeDetail {
   created_at: string
   instructions: Instruction[]
   recipe_ingredients: RecipeIngredient[]
+  author?: UserInfo | null
 }
 
 // ============================================
@@ -106,5 +113,42 @@ export interface RecipesSearchListParams {
   q?: string
   page?: number
   page_size?: number
+}
+
+// ============================================
+// Authentication Types
+// ============================================
+
+export interface User {
+  id: number
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  date_joined: string
+}
+
+export interface AuthResponse {
+  user: User
+  access: string
+  refresh: string
+}
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface RegisterRequest {
+  username: string
+  password: string
+  password_confirm: string
+  email?: string
+  first_name?: string
+  last_name?: string
+}
+
+export interface LogoutRequest {
+  refresh: string
 }
 
