@@ -154,6 +154,33 @@ def ai_recipe_match(request):
     recipes_text = []
     recipe_id_map = {}
     
+    # Normalize user input for exact matching
+    user_input_normalized = user_input.lower().strip()
+    user_ingredients = [ing.strip().lower() for ing in user_input_normalized.split(',')]
+    
+    # First, check for exact ingredient matches before calling AI
+    exact_matches = []
+    for recipe in recipes:
+        recipe_ingredients = [
+            ri.ingredient.name.lower().strip()
+            for ri in recipe.recipe_ingredients.all()
+        ]
+        # Check if any user ingredient exactly matches any recipe ingredient
+        for user_ing in user_ingredients:
+            if user_ing in recipe_ingredients:
+                exact_matches.append(recipe)
+                break  # Found a match, no need to check other ingredients for this recipe
+    
+    # If we found exact matches, return the first one immediately
+    if exact_matches:
+        best_match = exact_matches[0]
+        serializer = RecipeListSerializer(best_match)
+        return Response({
+            'count': 1,
+            'results': [serializer.data]
+        }, status=status.HTTP_200_OK)
+    
+    # No exact matches found, use AI to find best match
     for recipe in recipes:
         ingredients_list = [
             f"{ri.ingredient.name} ({ri.quantity})" 
@@ -176,17 +203,18 @@ Here are all available recipes:
 
 {chr(10).join(recipes_text)}
 
-Based on the user's ingredients, rank the recipes from most relevant to least relevant. 
-Consider:
-- Direct ingredient matches
-- Similar ingredients or substitutes
-- Recipe category relevance
-- Overall compatibility
+Find the SINGLE best matching recipe based on the user's ingredients. 
+Priority order:
+1. EXACT ingredient match (if user ingredient appears exactly in recipe ingredients, this is the best match)
+2. Direct ingredient matches (same ingredient name)
+3. Similar ingredients or substitutes
+4. Recipe category relevance
 
-Return ONLY a JSON array of recipe IDs in order of relevance (most relevant first).
-Format: [1, 5, 3, 7, ...]
+Return ONLY a JSON array with ONE recipe ID - the single best match.
+Format: [23]
 
-Do not include any explanation, just the JSON array."""
+If there is an exact ingredient match, you MUST return only that recipe ID.
+Do not include any explanation, just the JSON array with one ID."""
     
     try:
         # Call Gemini API - try different approaches based on API version
@@ -288,17 +316,21 @@ Do not include any explanation, just the JSON array."""
             if rid in recipe_id_map:
                 matched_recipes.append(recipe_id_map[rid])
         
-        # If no matches found, return all recipes in original order
-        if not matched_recipes:
-            matched_recipes = list(recipes)
-        
-        # Serialize results
-        serializer = RecipeListSerializer(matched_recipes, many=True)
-        
-        return Response({
-            'count': len(matched_recipes),
-            'results': serializer.data
-        }, status=status.HTTP_200_OK)
+        # Return only the FIRST (best) match
+        if matched_recipes:
+            best_match = matched_recipes[0]
+            serializer = RecipeListSerializer(best_match)
+            
+            return Response({
+                'count': 1,
+                'results': [serializer.data]
+            }, status=status.HTTP_200_OK)
+        else:
+            # If no matches found, return error
+            return Response(
+                {'error': 'No matching recipe found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
     except json.JSONDecodeError as e:
         return Response(
