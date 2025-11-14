@@ -10,12 +10,12 @@ import RecipeCreatePage from '@/pages/RecipeCreatePage.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/recipes',
+    name: 'RecipeList',
+    component: RecipeListPage,
   },
   {
     path: '/recipes',
-    name: 'RecipeList',
-    component: RecipeListPage,
+    redirect: '/',
   },
   {
     path: '/recipes/create',
