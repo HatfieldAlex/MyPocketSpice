@@ -11,6 +11,7 @@ import {
 import type {
   PaginatedRecipeListList,
   RecipeDetail,
+  RecipeList,
   RecipesListParams,
   RecipesCategoryListParams,
   RecipesSearchListParams,
@@ -111,6 +112,28 @@ class ApiClient {
     }
 
     return httpClient.post<RecipeCreate>('/recipes/create/', data)
+  }
+
+  /**
+   * POST /api/recipes/ai-match/
+   * AI-powered recipe matching based on ingredients
+   */
+  async aiMatchRecipes(ingredients: string): Promise<{ count: number; recipe: RecipeList; justification: string }> {
+    if (API_CONFIG.useMock) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            count: 1,
+            recipe: mockPaginatedResponse(1, 1).results[0],
+            justification: "With your ingredients, this recipe is a perfect match! Check you have the right amounts, and you're ready to cook."
+          })
+        }, 2000) // Simulate AI thinking time
+      })
+    }
+
+    return httpClient.post<{ count: number; recipe: RecipeList; justification: string }>('/recipes/ai-match/', {
+      ingredients
+    })
   }
 }
 

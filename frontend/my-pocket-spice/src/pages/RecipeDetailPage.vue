@@ -40,6 +40,14 @@
           </div>
         </header>
         
+        <div v-if="aiJustification" class="ai-explanation">
+          <div class="ai-explanation-header">
+            <span class="ai-icon">✨</span>
+            <span class="ai-label">AI Recommendation</span>
+          </div>
+          <p class="ai-explanation-text">{{ aiJustification }}</p>
+        </div>
+        
         <div v-if="recipe.description" class="recipe-description">
           <p>{{ recipe.description }}</p>
         </div>
@@ -91,6 +99,15 @@ const router = useRouter()
 const recipeId = computed(() => Number(route.params.id))
 
 const { recipe, loading, error, fetchRecipe } = useRecipeDetail()
+
+// Get AI justification from query params if present
+const aiJustification = computed(() => {
+  const justification = route.query.justification
+  if (route.query.ai === 'true' && justification && typeof justification === 'string') {
+    return decodeURIComponent(justification)
+  }
+  return null
+})
 
 const goBack = () => {
   router.push('/recipes')
@@ -175,6 +192,42 @@ onMounted(() => {
 
 .meta-icon {
   font-size: 1.25rem;
+}
+
+.ai-explanation {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #fff5fc 0%, #ffffff 100%);
+  border-radius: 0.75rem;
+  border: 2px solid #fed1f6;
+  box-shadow: 0 4px 6px -1px rgba(254, 209, 246, 0.2), 0 2px 4px -1px rgba(254, 209, 246, 0.1);
+}
+
+.ai-explanation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ai-icon {
+  font-size: 1.5rem;
+}
+
+.ai-label {
+  font-weight: 600;
+  color: #0a8961;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ai-explanation-text {
+  margin: 0;
+  color: #0a0a0a;
+  line-height: 1.7;
+  font-size: 1.0625rem;
+  font-style: italic;
 }
 
 .recipe-description {
