@@ -171,13 +171,36 @@ def ai_recipe_match(request):
                 exact_matches.append(recipe)
                 break  # Found a match, no need to check other ingredients for this recipe
     
-    # If we found exact matches, return the first one immediately
+    # If we found exact matches, return the first one immediately with justification
     if exact_matches:
         best_match = exact_matches[0]
         serializer = RecipeListSerializer(best_match)
+        
+        # Create whimsical justification for exact match
+        recipe_ingredients = [
+            ri.ingredient.name for ri in best_match.recipe_ingredients.all()
+        ]
+        matched_ings = [ing for ing in user_ingredients if ing in [ri.lower().strip() for ri in recipe_ingredients]]
+        
+        if matched_ings:
+            # Format matched ingredients nicely
+            matched_display = ', '.join([ing.title() for ing in matched_ings])
+            missing_ings = [ri for ri in recipe_ingredients if ri.lower().strip() not in user_ingredients]
+            
+            if missing_ings:
+                missing_display = ', '.join(missing_ings[:3])  # Show first 3 missing
+                if len(missing_ings) > 3:
+                    missing_display += f", and {len(missing_ings) - 3} more thing{'s' if len(missing_ings) - 3 > 1 else ''}"
+                justification = f"With your {matched_display}, you could make {best_match.title}! Check you have the right amounts, but then the only thing you'd need is {missing_display}."
+            else:
+                justification = f"Perfect match! With your {matched_display}, you have everything you need to make {best_match.title}. You're all set to create something delicious!"
+        else:
+            justification = f"Great news! You have the perfect ingredients to make {best_match.title}. Check you have the right amounts, and you're ready to cook!"
+        
         return Response({
             'count': 1,
-            'results': [serializer.data]
+            'recipe': serializer.data,
+            'justification': justification
         }, status=status.HTTP_200_OK)
     
     # No exact matches found, use AI to find best match
@@ -197,7 +220,7 @@ Description: {recipe.description[:200] if recipe.description else 'N/A'}
         recipe_id_map[recipe.id] = recipe
     
     # Create prompt for Gemini
-    prompt = f"""You are a recipe matching assistant. A user has these ingredients: "{user_input}"
+    prompt = f"""You are a whimsical recipe matching assistant. A user has these ingredients: "{user_input}"
 
 Here are all available recipes:
 
@@ -210,11 +233,20 @@ Priority order:
 3. Similar ingredients or substitutes
 4. Recipe category relevance
 
-Return ONLY a JSON array with ONE recipe ID - the single best match.
-Format: [23]
+Return a JSON object with two fields:
+1. "recipe_id": the single best matching recipe ID (just the number)
+2. "justification": a whimsical, friendly message explaining why this recipe was chosen, in the style of:
+   "With your [user ingredients], you could make [recipe name]! Check you have the right amounts, but then the only thing you'd need is [missing ingredients or encouragement]."
+   
+Make it warm, encouraging, and slightly playful. Reference the user's ingredients and what they'd need.
 
-If there is an exact ingredient match, you MUST return only that recipe ID.
-Do not include any explanation, just the JSON array with one ID."""
+Example format:
+{{
+  "recipe_id": 23,
+  "justification": "With your curry paste, you could make Vegetable Curry! Check you have the right amounts, but then the only thing you'd need is some fresh vegetables and a bit of time to let those flavors meld together."
+}}
+
+Return ONLY the JSON object, no other text."""
     
     try:
         # Call Gemini API - try different approaches based on API version
@@ -295,42 +327,72 @@ Do not include any explanation, just the JSON array with one ID."""
             if match:
                 response_text = match.group(1).strip()
         
-        # Try to parse as JSON
+        # Try to parse as JSON object (with recipe_id and justification)
         try:
-            matched_ids = json.loads(response_text)
+            ai_response = json.loads(response_text)
+            
+            # Handle both old format (array) and new format (object)
+            if isinstance(ai_response, list):
+                # Old format: just an array of IDs
+                matched_ids = ai_response
+                justification = None
+            elif isinstance(ai_response, dict):
+                # New format: object with recipe_id and justification
+                matched_ids = [ai_response.get('recipe_id')]
+                justification = ai_response.get('justification')
+            else:
+                raise ValueError(f"Unexpected response format: {type(ai_response)}")
+                
         except json.JSONDecodeError:
-            # Try to extract array from text
+            # Try to extract array from text (fallback for old format)
             array_match = re.search(r'\[[\d,\s]+\]', response_text)
             if array_match:
                 matched_ids = json.loads(array_match.group(0))
+                justification = None
             else:
-                raise ValueError(f"Could not parse JSON from response: {response_text}")
+                # Try to extract object
+                object_match = re.search(r'\{[^}]+\}', response_text)
+                if object_match:
+                    try:
+                        ai_response = json.loads(object_match.group(0))
+                        matched_ids = [ai_response.get('recipe_id')]
+                        justification = ai_response.get('justification')
+                    except:
+                        raise ValueError(f"Could not parse JSON from response: {response_text}")
+                else:
+                    raise ValueError(f"Could not parse JSON from response: {response_text}")
         
         # Validate that matched_ids is a list
-        if not isinstance(matched_ids, list):
-            raise ValueError(f"Expected list, got {type(matched_ids)}")
+        if not isinstance(matched_ids, list) or not matched_ids:
+            raise ValueError(f"Expected non-empty list, got {matched_ids}")
         
-        # Get recipes in matched order, preserving only valid IDs
-        matched_recipes = []
-        for rid in matched_ids:
-            if rid in recipe_id_map:
-                matched_recipes.append(recipe_id_map[rid])
+        # Get the best matching recipe
+        recipe_id = matched_ids[0]
+        if recipe_id not in recipe_id_map:
+            raise ValueError(f"Recipe ID {recipe_id} not found in available recipes")
         
-        # Return only the FIRST (best) match
-        if matched_recipes:
-            best_match = matched_recipes[0]
-            serializer = RecipeListSerializer(best_match)
+        best_match = recipe_id_map[recipe_id]
+        serializer = RecipeListSerializer(best_match)
+        
+        # Generate justification if not provided by AI
+        if not justification:
+            # Create a simple justification based on ingredients
+            recipe_ingredients = [
+                ri.ingredient.name for ri in best_match.recipe_ingredients.all()
+            ]
+            user_ing_list = [ing.strip() for ing in user_input.split(',')]
+            matched_ings = [ing for ing in user_ing_list if any(ing.lower() in ri.lower() or ri.lower() in ing.lower() for ri in recipe_ingredients)]
             
-            return Response({
-                'count': 1,
-                'results': [serializer.data]
-            }, status=status.HTTP_200_OK)
-        else:
-            # If no matches found, return error
-            return Response(
-                {'error': 'No matching recipe found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            if matched_ings:
+                justification = f"With your {', '.join(matched_ings)}, you could make {best_match.title}! Check you have the right amounts, but then you're all set to create something delicious."
+            else:
+                justification = f"You could make {best_match.title}! This recipe matches your ingredients and will be a great choice for your next meal."
+        
+        return Response({
+            'count': 1,
+            'recipe': serializer.data,
+            'justification': justification
+        }, status=status.HTTP_200_OK)
         
     except json.JSONDecodeError as e:
         return Response(
