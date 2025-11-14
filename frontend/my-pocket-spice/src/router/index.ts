@@ -5,6 +5,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import RecipeListPage from '@/pages/RecipeListPage.vue'
 import RecipeDetailPage from '@/pages/RecipeDetailPage.vue'
+import RecipeCreatePage from '@/pages/RecipeCreatePage.vue'
 
 const routes = [
   {
@@ -15,6 +16,11 @@ const routes = [
     path: '/recipes',
     name: 'RecipeList',
     component: RecipeListPage,
+  },
+  {
+    path: '/recipes/create',
+    name: 'RecipeCreate',
+    component: RecipeCreatePage,
   },
   {
     path: '/recipes/:id',
