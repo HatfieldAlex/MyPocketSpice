@@ -71,21 +71,21 @@ const handleCategoryClick = (category: string) => {
   flex-shrink: 0;
   padding: 0.75rem 1.5rem;
   border-radius: 2rem;
-  border: 1px solid #e8e8e8;
-  background-color: #ffffff;
+  border: 1px solid #fed1f6;
+  background-color: #fed1f6;
   color: #0a0a0a;
   font-weight: 600;
   font-size: 0.9375rem;
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px 0 rgba(10, 10, 10, 0.1), 0 1px 2px 0 rgba(10, 10, 10, 0.06);
+  box-shadow: 0 1px 3px 0 rgba(254, 209, 246, 0.3), 0 1px 2px 0 rgba(254, 209, 246, 0.2);
   white-space: nowrap;
 }
 
 .category-box:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(10, 10, 10, 0.1), 0 2px 4px -1px rgba(10, 10, 10, 0.06);
-  border-color: #fed1f6;
+  box-shadow: 0 4px 6px -1px rgba(254, 209, 246, 0.4), 0 2px 4px -1px rgba(254, 209, 246, 0.3);
+  background-color: #fdb8f0;
 }
 
 .category-box.active {
