@@ -1,4 +1,4 @@
-# My Pocket Spice - Recipe Management Application
+# MyPocketSpice
 
 A modern, type-safe Vue 3 recipe management application built with TypeScript, featuring a warm design system and full OpenAPI schema integration.
 

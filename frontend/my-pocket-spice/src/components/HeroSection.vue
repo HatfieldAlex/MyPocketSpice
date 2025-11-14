@@ -2,7 +2,7 @@
   <section class="hero-section">
     <Container>
       <div class="hero-content">
-        <h1 class="hero-title">My Pocket Spice</h1>
+        <h1 class="hero-title">MyPocketSpice</h1>
         <p class="hero-subtitle">Discover delicious recipes for every occasion</p>
         
         <div class="search-wrapper">

@@ -4,8 +4,7 @@
       <Container>
         <div class="nav-content">
           <router-link to="/recipes" class="nav-logo">
-            <span class="logo-text">MyPocketSkill</span>
-            <span class="logo-accent">Spice</span>
+            <span class="logo-text">MyPocketSpice</span>
           </router-link>
         </div>
       </Container>
@@ -44,7 +43,6 @@ import Container from './components/ui/Container.vue'
 .nav-logo {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
   font-size: 1.5rem;
   font-weight: 700;
   color: #ffffff;
@@ -53,10 +51,6 @@ import Container from './components/ui/Container.vue'
 
 .logo-text {
   color: #ffffff;
-}
-
-.logo-accent {
-  color: #fed1f6;
 }
 
 .app-main {
