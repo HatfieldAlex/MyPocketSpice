@@ -5,6 +5,7 @@ from .views import (
     RecipeSearchView,
     RecipeDetailView,
     RecipeCreateView,
+    ai_recipe_match,
 )
 
 urlpatterns = [
@@ -27,5 +28,7 @@ urlpatterns = [
     # 5. Create a new full recipe with nested relationships
     path("recipes/create/", RecipeCreateView.as_view(), name="recipe-create"),
 
+    # 6. AI Recipe Matching endpoint
+    path("recipes/ai-match/", ai_recipe_match, name="ai-recipe-match"),
 
 ]
