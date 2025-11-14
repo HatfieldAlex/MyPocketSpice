@@ -12,8 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from dotenv import load_dotenv
+import os
 
-# Load environment variables from .env file
+# Load environment variables from .env file (if present)
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,12 +25,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-a+6al6@k37wdbg7-i(8_nu$i@)-hs@%(9^5^_96d#=sn9(=s2g"
+# Default is fine for local/dev; production should override via env.
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-a+6al6@k37wdbg7-i(8_nu$i@)-hs@%(9^5^_96d#=sn9(=s2g",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Default True for local development; set DJANGO_DEBUG=False in production.
+DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = ['my-pocket-spice-backend.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.getenv(
+    "DJANGO_ALLOWED_HOSTS",
+    "my-pocket-spice-backend.onrender.com,localhost,127.0.0.1",
+).split(",")
 
 
 # Application definition
@@ -146,8 +155,18 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+# In development we allow all origins for convenience; in production you
+# should set explicit allowed origins via environment variables.
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOWED_ORIGINS = [
+        # Override or extend via DJANGO_CORS_ALLOWED_ORIGINS if needed
+        # e.g. "https://your-frontend.netlify.app"
+    ]
 
 # JWT Settings
 from datetime import timedelta
