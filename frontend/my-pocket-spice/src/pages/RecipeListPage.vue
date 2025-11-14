@@ -3,12 +3,17 @@
     <HeroSection />
     
     <Container>
-      <div v-if="isSearching ? searchLoading : loading" class="loading-state">
+      <CategoryFilter
+        :selected-category="selectedCategory"
+        @category-selected="handleCategorySelected"
+      />
+      
+      <div v-if="isLoading" class="loading-state">
         <p>Loading recipes...</p>
       </div>
       
-      <div v-else-if="isSearching ? searchError : error" class="error-state">
-        <p>Error: {{ (isSearching ? searchError : error)?.message }}</p>
+      <div v-else-if="displayError" class="error-state">
+        <p>Error: {{ displayError?.message }}</p>
         <Button @click="refetch">Try Again</Button>
       </div>
       
@@ -56,28 +61,55 @@ import Container from '@/components/ui/Container.vue'
 import Button from '@/components/ui/Button.vue'
 import RecipeCard from '@/components/RecipeCard.vue'
 import HeroSection from '@/components/HeroSection.vue'
-import { useRecipes, useRecipeSearch } from '@/composables/useRecipes'
+import CategoryFilter from '@/components/CategoryFilter.vue'
+import { useRecipes, useRecipeSearch, useRecipesByCategory } from '@/composables/useRecipes'
 
 const route = useRoute()
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(9)
+const selectedCategory = ref<string | null>(null)
 
 const searchQuery = computed(() => route.query.q as string | undefined)
 const isSearching = computed(() => !!searchQuery.value)
 
 const { recipes, loading, error, fetchRecipes } = useRecipes()
 const { searchResults, loading: searchLoading, error: searchError, searchRecipes } = useRecipeSearch()
+const { recipes: categoryRecipes, loading: categoryLoading, error: categoryError, fetchByCategory } = useRecipesByCategory()
 
-const displayRecipes = computed(() => isSearching.value ? searchResults.value : recipes.value)
+const isLoading = computed(() => {
+  if (isSearching.value) return searchLoading.value
+  if (selectedCategory.value) return categoryLoading.value
+  return loading.value
+})
+
+const displayError = computed(() => {
+  if (isSearching.value) return searchError.value
+  if (selectedCategory.value) return categoryError.value
+  return error.value
+})
+
+const displayRecipes = computed(() => {
+  if (isSearching.value) return searchResults.value
+  if (selectedCategory.value) return categoryRecipes.value
+  return recipes.value
+})
 
 const totalPages = computed(() => {
   if (!displayRecipes.value) return 0
   return Math.ceil(displayRecipes.value.count / pageSize.value)
 })
 
+const handleCategorySelected = (category: string | null) => {
+  selectedCategory.value = category
+  currentPage.value = 1
+  refetch()
+}
+
 const refetch = async () => {
   if (isSearching.value) {
     await searchRecipes({ q: searchQuery.value, page: currentPage.value, page_size: pageSize.value })
+  } else if (selectedCategory.value) {
+    await fetchByCategory({ category: selectedCategory.value, page: currentPage.value, page_size: pageSize.value })
   } else {
     await fetchRecipes({ page: currentPage.value, page_size: pageSize.value })
   }
@@ -112,6 +144,8 @@ watch(() => route.query, () => {
   
   if (isSearching.value) {
     searchRecipes({ q: searchQuery.value, page, page_size: pageSize.value })
+  } else if (selectedCategory.value) {
+    fetchByCategory({ category: selectedCategory.value, page, page_size: pageSize.value })
   } else {
     fetchRecipes({ page, page_size: pageSize.value })
   }
